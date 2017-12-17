@@ -19,6 +19,7 @@ use proto::MetricFamily;
 
 use protobuf::Message;
 use std::io::Write;
+use std::marker::PhantomData;
 
 /// The protocol buffer format of metric family.
 pub const PROTOBUF_FORMAT: &str = "application/vnd.google.protobuf; \
@@ -28,16 +29,19 @@ pub const PROTOBUF_FORMAT: &str = "application/vnd.google.protobuf; \
 /// Implementation of an `Encoder` that converts a `MetricFamily` proto message
 /// into the binary wire format of protobuf.
 #[derive(Debug, Default)]
-pub struct ProtobufEncoder;
+pub struct ProtobufEncoder<W: Write> {
+    _w: PhantomData<W>,
+}
 
-impl ProtobufEncoder {
-    pub fn new() -> ProtobufEncoder {
-        ProtobufEncoder
+impl<W: Write> ProtobufEncoder<W> {
+    pub fn new() -> ProtobufEncoder<W> {
+        ProtobufEncoder { _w: PhantomData }
     }
 }
 
-impl Encoder for ProtobufEncoder {
-    fn encode<W: Write>(&self, metric_familys: &[MetricFamily], writer: &mut W) -> Result<()> {
+impl<W: Write> Encoder for ProtobufEncoder<W> {
+    type Output = W;
+    fn encode(&self, metric_familys: &[MetricFamily], writer: &mut Self::Output) -> Result<()> {
         for mf in metric_familys {
             // Fail-fast checks.
             check_metric_family(mf)?;

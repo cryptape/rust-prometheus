@@ -24,13 +24,14 @@ pub use self::text::{TextEncoder, TEXT_FORMAT};
 
 /// `Encoder` types encode metric families into an underlying wire protocol.
 pub trait Encoder {
+    type Output: Write;
     /// `encode` converts a slice of MetricFamily proto messages into target
     /// format and writes the resulting lines to `writer`. It returns the number
     /// of bytes written and any error encountered. This function does not
     /// perform checks on the content of the metric and label names,
     /// i.e. invalid metric or label names will result in invalid text format
     /// output.
-    fn encode<W: Write>(&self, &[MetricFamily], &mut W) -> Result<()>;
+    fn encode(&self, &[MetricFamily], &mut Self::Output) -> Result<()>;
 
     /// `format_type` returns target format.
     fn format_type(&self) -> &str;
@@ -56,32 +57,32 @@ mod tests {
 
     #[test]
     fn test_bad_metrics() {
-        let mut writer = Vec::<u8>::new();
-        let pb_encoder = ProtobufEncoder::new();
-        let text_encoder = TextEncoder::new();
+        let mut writer = Vec::new();
+        let encoders: Vec<Box<Encoder<Output = Vec<u8>>>> = vec![
+            Box::new(ProtobufEncoder::new()),
+            Box::new(TextEncoder::new()),
+        ];
         let cv = CounterVec::new(
             Opts::new("test_counter_vec", "help information"),
             &["labelname"],
         ).unwrap();
+        let mut check = |mfs: Vec<MetricFamily>| {
+            check_metric_family(&mfs[0]).unwrap_err();
+            for encoder in &encoders {
+                encoder.encode(&mfs, &mut writer).unwrap_err();
+                assert_eq!(writer.len(), 0);
+            }
+        };
 
         // Empty metrics
         let mfs = cv.collect();
-        check_metric_family(&mfs[0]).unwrap_err();
-        pb_encoder.encode(&mfs, &mut writer).unwrap_err();
-        assert_eq!(writer.len(), 0);
-        text_encoder.encode(&mfs, &mut writer).unwrap_err();
-        assert_eq!(writer.len(), 0);
+        check(mfs);
 
-        // Add a sub metric
+        // Add a metric
         cv.with_label_values(&["foo"]).inc();
         let mut mfs = cv.collect();
-
         // Empty name
         (&mut mfs[0]).clear_name();
-        check_metric_family(&mfs[0]).unwrap_err();
-        pb_encoder.encode(&mfs, &mut writer).unwrap_err();
-        assert_eq!(writer.len(), 0);
-        text_encoder.encode(&mfs, &mut writer).unwrap_err();
-        assert_eq!(writer.len(), 0);
+        check(mfs);
     }
 }

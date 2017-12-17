@@ -19,6 +19,7 @@ use histogram::BUCKET_LABEL;
 use proto::{self, MetricType};
 use proto::MetricFamily;
 use std::io::Write;
+use std::marker::PhantomData;
 
 /// The text format of metric family.
 pub const TEXT_FORMAT: &str = "text/plain; version=0.0.4";
@@ -28,16 +29,20 @@ const POSITIVE_INF: &str = "+Inf";
 /// Implementation of an `Encoder` that converts a `MetricFamily` proto message
 /// into text format.
 #[derive(Debug, Default)]
-pub struct TextEncoder;
+pub struct TextEncoder<W: Write> {
+    _w: PhantomData<W>,
+}
 
-impl TextEncoder {
-    pub fn new() -> TextEncoder {
-        TextEncoder
+impl<W: Write> TextEncoder<W> {
+    pub fn new() -> TextEncoder<W> {
+        TextEncoder { _w: PhantomData }
     }
 }
 
-impl Encoder for TextEncoder {
-    fn encode<W: Write>(&self, metric_familys: &[MetricFamily], writer: &mut W) -> Result<()> {
+impl<W: Write> Encoder for TextEncoder<W> {
+    type Output = W;
+
+    fn encode(&self, metric_familys: &[MetricFamily], writer: &mut Self::Output) -> Result<()> {
         for mf in metric_familys {
             // Fail-fast checks.
             check_metric_family(mf)?;

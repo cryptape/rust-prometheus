@@ -481,7 +481,7 @@ impl HistogramVec {
 
     pub fn local(&self) -> LocalHistogramVec {
         let vec = self.clone();
-        LocalHistogramVec::new( vec)
+        LocalHistogramVec::new(vec)
     }
 }
 
