@@ -18,6 +18,7 @@ use errors::Result;
 use proto::{self, LabelPair};
 use std::cmp::{Eq, Ord, Ordering, PartialOrd};
 use std::collections::HashMap;
+use std::time;
 
 pub const SEPARATOR_BYTE: u8 = 0xFF;
 
@@ -186,6 +187,11 @@ fn build_fq_name(namespace: &str, subsystem: &str, name: &str) -> String {
     }
 
     name.to_owned()
+}
+
+pub fn get_current_time() -> u64 {
+    let duration = time::UNIX_EPOCH.elapsed().unwrap();
+    duration.as_secs() * 1_000 + (duration.subsec_nanos() / 1_000_000) as u64
 }
 
 #[cfg(test)]

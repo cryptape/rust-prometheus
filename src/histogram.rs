@@ -16,7 +16,7 @@
 use atomic64::{AtomicF64, AtomicU64};
 use desc::{Desc, Describer};
 use errors::{Error, Result};
-use metrics::{Collector, Metric, Opts};
+use metrics::{Collector, Metric, Opts, get_current_time};
 use proto;
 
 use protobuf::RepeatedField;
@@ -427,6 +427,7 @@ impl Metric for Histogram {
 
         let h = self.core.proto();
         m.set_histogram(h);
+        m.set_timestamp_ms(get_current_time() as i64);
 
         m
     }

@@ -15,6 +15,7 @@
 use atomic64::AtomicF64;
 use desc::{Desc, Describer};
 use errors::{Error, Result};
+use metrics::get_current_time;
 
 use proto::{Counter, Gauge, LabelPair, Metric, MetricFamily, MetricType};
 use protobuf::RepeatedField;
@@ -119,6 +120,7 @@ impl Value {
                 m.set_gauge(gauge);
             }
         }
+        m.set_timestamp_ms(get_current_time() as i64);
 
         m
     }
