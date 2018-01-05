@@ -79,3 +79,7 @@ message MetricFamily {
   optional MetricType type   = 3;
   repeated Metric     metric = 4;
 }
+
+message MetricFamilyVec {
+  repeated MetricFamily metrics = 1;
+}
