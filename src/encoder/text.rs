@@ -39,8 +39,10 @@ impl TextEncoder {
 impl Encoder for TextEncoder {
     fn encode<W: Write>(&self, metric_familys: &[MetricFamily], writer: &mut W) -> Result<()> {
         for mf in metric_familys {
-            // Fail-fast checks.
-            check_metric_family(mf)?;
+            // If the metric family is empty, just ignore
+            if check_metric_family(mf).is_err() {
+                continue;
+            }
 
             let name = mf.get_name();
             let help = mf.get_help();
